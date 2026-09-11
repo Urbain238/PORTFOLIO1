@@ -1,3 +1,4 @@
+from core.database import Base
 from .user import User
 from .profile import Profile
 from .parcours import Parcours
