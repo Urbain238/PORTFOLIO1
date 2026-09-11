@@ -4,32 +4,20 @@ from jose import jwt
 from passlib.context import CryptContext
 from core.config import settings
 
-# Context pour le hachage des mots de passe
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Vérifie le mot de passe en clair par rapport au hash enregistré."""
     return pwd_context.verify(plain_password, hashed_password)
 
-
 def get_password_hash(password: str) -> str:
-    """Hache un mot de passe en clair."""
     return pwd_context.hash(password)
 
-
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Génère un jeton JWT d'accès."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        )
-    
+        expire = datetime.now(timezone.utc) + timedelta(minutes=int(settings.ACCESS_TOKEN_EXPIRE_MINUTES or 60))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
