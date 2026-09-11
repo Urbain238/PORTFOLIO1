@@ -2,13 +2,23 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from core.config import settings
 
-# engine utilisant l'URL nettoyée et gérée par core/config.py
-engine = create_engine(
-    settings.sync_database_url,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10
-)
+db_url = str(settings.sync_database_url)
+is_sqlite = "sqlite" in db_url
+
+connect_args = {"check_same_thread": False} if is_sqlite else {}
+
+engine_kwargs = {
+    "connect_args": connect_args,
+    "pool_pre_ping": True,
+}
+
+if not is_sqlite:
+    engine_kwargs.update({
+        "pool_size": 5,
+        "max_overflow": 10,
+    })
+
+engine = create_engine(db_url, **engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
