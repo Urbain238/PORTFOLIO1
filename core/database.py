@@ -1,18 +1,10 @@
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from core.config import settings
 
-# Récupération de l'URL de base de données
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/dbname")
-
-# Supabase / Neon fournissent souvent une URL commençant par postgres://
-# SQLAlchemy requiert obligatoirement le préfixe postgresql://
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# pool_pre_ping=True évite les erreurs de connexion fermée courantes en serverless
+# engine utilisant l'URL nettoyée et gérée par core/config.py
 engine = create_engine(
-    DATABASE_URL,
+    settings.sync_database_url,
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10
