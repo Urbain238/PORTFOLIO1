@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 import models
+from core.config import settings
 from core.database import engine
 from routers import (
     auth,
@@ -19,22 +20,22 @@ from routers import (
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Portfolio API",
-    version="1.0.0",
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-# Configuration CORS pour autoriser le Frontend (Netlify / Vercel)
+# Configuration CORS dynamique (récupère les origines de core/config.py)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # À restreindre avec votre URL Netlify en production
+    allow_origins=settings.ALLOWED_ORIGINS if settings.ALLOWED_ORIGINS else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Enregistrement des endpoints séparés par module
+# Enregistrement des routeurs
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentification"])
 app.include_router(profile.router, prefix="/api/profile", tags=["Profil"])
 app.include_router(parcours.router, prefix="/api/parcours", tags=["Parcours"])
@@ -47,8 +48,8 @@ app.include_router(secrets.router, prefix="/api/secrets", tags=["Coffre-Fort"])
 
 @app.get("/", tags=["Healthcheck"])
 def read_root():
-    return {"status": "API Portfolio opérationnelle", "version": "1.0.0"}
+    return {"status": "API Portfolio opérationnelle", "version": settings.VERSION}
 
 
-# Adaptateur Serverless pour le déploiement sur Vercel
+# Adaptateur Serverless pour Vercel
 handler = Mangum(app)
