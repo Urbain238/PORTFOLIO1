@@ -1,6 +1,4 @@
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from core.database import get_db
@@ -9,57 +7,53 @@ import models
 
 router = APIRouter()
 
-class ParcoursSchema(BaseModel):
-    titre: str
-    etablissement: Optional[str] = None
-    annee: str
-    description: Optional[str] = None
-    en_cours: bool = False
-    ordre: int = 0
 
 @router.get("/")
-def get_parcours(db: Session = Depends(get_db)):
+def get_all_parcours(db: Session = Depends(get_db)):
     return db.query(models.Parcours).order_by(models.Parcours.ordre.asc()).all()
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_parcours(
-    data: ParcoursSchema, 
-    db: Session = Depends(get_db), 
-    current_user: models.User = Depends(get_current_user)
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
-    step = models.Parcours(**data.model_dump())
-    db.add(step)
+    item = models.Parcours(**data)
+    db.add(item)
     db.commit()
-    db.refresh(step)
-    return step
+    db.refresh(item)
+    return item
+
 
 @router.put("/{parcours_id}")
 def update_parcours(
     parcours_id: int,
-    data: ParcoursSchema,
+    data: dict,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user),
 ):
-    step = db.query(models.Parcours).filter(models.Parcours.id == parcours_id).first()
-    if not step:
-        raise HTTPException(status_code=404, detail="Étape non trouvée")
-    
-    for key, value in data.model_dump().items():
-        setattr(step, key, value)
-        
+    item = db.query(models.Parcours).filter(models.Parcours.id == parcours_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Élément introuvable")
+
+    for key, value in data.items():
+        setattr(item, key, value)
+
     db.commit()
-    db.refresh(step)
-    return step
+    db.refresh(item)
+    return item
+
 
 @router.delete("/{parcours_id}")
 def delete_parcours(
-    parcours_id: int, 
-    db: Session = Depends(get_db), 
-    current_user: models.User = Depends(get_current_user)
+    parcours_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
-    step = db.query(models.Parcours).filter(models.Parcours.id == parcours_id).first()
-    if not step:
-        raise HTTPException(status_code=404, detail="Étape non trouvée")
-    db.delete(step)
+    item = db.query(models.Parcours).filter(models.Parcours.id == parcours_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Élément introuvable")
+    db.delete(item)
     db.commit()
-    return {"message": "Étape supprimée"}
+    return {"message": "Étape de parcours supprimée"}
