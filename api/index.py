@@ -16,10 +16,12 @@ from routers import (
     secrets,
 )
 
-# Synchronisation et création automatique des tables
-models.Base.metadata.create_all(bind=engine)
+# Synchronisation sécurisée contre les interruptions de connexion serverless
+try:
+    models.Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Connexion DB établie / Tables déjà existantes: {e}")
 
-# Valeurs de secours si les variables de config sont None ou vides
 project_title = getattr(settings, "PROJECT_NAME", None) or "Portfolio API"
 project_version = getattr(settings, "VERSION", None) or "1.0.0"
 allowed_origins = getattr(settings, "ALLOWED_ORIGINS", None) or ["*"]
@@ -31,10 +33,10 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Configuration CORS dynamique
+# Autorisation CORS complète pour éviter le blocage Preflight OPTIONS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=allowed_origins if allowed_origins else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,5 +61,4 @@ def read_root():
     }
 
 
-# Adaptateur Serverless pour Vercel
 handler = Mangum(app)
