@@ -16,20 +16,25 @@ from routers import (
     secrets,
 )
 
-# Synchronisation et création automatique des tables dans PostgreSQL
+# Synchronisation et création automatique des tables
 models.Base.metadata.create_all(bind=engine)
 
+# Valeurs de secours si les variables de config sont None ou vides
+project_title = getattr(settings, "PROJECT_NAME", None) or "Portfolio API"
+project_version = getattr(settings, "VERSION", None) or "1.0.0"
+allowed_origins = getattr(settings, "ALLOWED_ORIGINS", None) or ["*"]
+
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
+    title=project_title,
+    version=project_version,
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
-# Configuration CORS dynamique (récupère les origines de core/config.py)
+# Configuration CORS dynamique
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS if settings.ALLOWED_ORIGINS else ["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,7 +53,10 @@ app.include_router(secrets.router, prefix="/api/secrets", tags=["Coffre-Fort"])
 
 @app.get("/", tags=["Healthcheck"])
 def read_root():
-    return {"status": "API Portfolio opérationnelle", "version": settings.VERSION}
+    return {
+        "status": "API Portfolio opérationnelle",
+        "version": project_version,
+    }
 
 
 # Adaptateur Serverless pour Vercel
